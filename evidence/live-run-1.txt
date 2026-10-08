@@ -1,0 +1,41 @@
+EventWitness v2, live run 1 (GenLayer Studio, Normal (Full Consensus) mode)
+Date: 2026-10-08, Europe/Istanbul. Values below are copied from the user's Studio screenshots/pastes.
+
+Deploy args
+  event_identity: Tokyo 2020 Summer Olympics (Games of the XXXII Olympiad), Tokyo, Japan
+  original_date : 2020-07-24
+  sources       : en.wikipedia.org/wiki/2020_Summer_Olympics
+                  whyy.org/articles/tokyo-olympics-officially-postponed-until-2021
+                  www.boston.com/sports/olympics/2020/03/24/tokyo-olympics-officially-postponed-until-2021
+  window        : 300 s
+  contract      : 0xD1c4378e3D278e33B49B670ECe629b0e4945D977, owner 0x2D69D4882286Efa56D4a0A368a4B804381Ef4bca
+
+Transactions (Studio status): Deploy FINALIZED, start_round FINALIZED, assess FINALIZED, finalize FINALIZED.
+Logs show "Reached consensus", ACCEPTED, FINALIZED for the finalize transaction.
+
+get_state_json after assess():
+  phase PROVISIONAL, candidate POSTPONED, latest_outcome POSTPONED, round 1,
+  deadline 1791463651 (= assess timestamp + 300), history_count 2, challenge_used 0
+
+get_state_json after finalize():
+  phase FINALIZED, candidate POSTPONED, latest_outcome POSTPONED, round 1, deadline 0,
+  last_finalized_status POSTPONED, last_finalized_round 1, current_finalized 1,
+  history_count 3, challenge_used 0, extra_sources [], challenge_url ""
+
+get_history_json(0): action START, round 1, phase OPEN, outcome UNKNOWN, timestamp 1791463319,
+  caller 0x2D69...4bca, sources = the three base URLs.
+get_history_json(1) and (2): NOT captured yet.
+
+Not shown by this run: repeatability (one run only), which sources voted POSTPONED, behaviour
+under a challenge, behaviour when sources disagree, cost.
+
+----------------------------------------------------------------------
+Live run 2 (same contract instance, same sources, same day)
+get_state_json after round 2 (user paste, 2026-10-08 16:35 Istanbul):
+  phase FINALIZED, round 2, candidate POSTPONED, latest_outcome POSTPONED, deadline 0,
+  last_finalized_status POSTPONED, last_finalized_round 2, current_finalized 1,
+  history_count 6 (START, ASSESS, FINALIZE for each of two rounds), challenge_used 0,
+  extra_sources [], challenge_url ""
+Not captured: per-transaction statuses and get_history_json(1..5) for this round. The user
+reported the stages "got mixed up" while running it; the final state above is consistent with
+two complete rounds (history_count 6, last_finalized_round 2).

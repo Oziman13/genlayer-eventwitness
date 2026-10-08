@@ -1,0 +1,13 @@
+Mutation checks (2026-10-08): each fix was reverted on its own; the suite must fail.
+Baseline: 89 passed.
+
+revert                                                              result
+page JSON escaped with ensure_ascii=True (non-ASCII quotes unmatched)   1 failed
+challenge URL kept across rounds (permanent poisoning)                  1 failed
+assess() open to any caller (round burning)                             1 failed
+"distinct sites" check replaced by "distinct hosts"                     4 failed
+quote compared without whitespace normalisation                         1 failed
+assess() refused in NEEDS_EVIDENCE (the v1 dead end)                    1 failed
+finalize() accepts any valid status, not just the candidate             1 failed (after adding
+                                                                        test_finalize_refuses_a_different_valid_status;
+                                                                        this mutant survived the first 88 tests)
