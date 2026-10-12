@@ -11,9 +11,8 @@ Round 3, steps and times as shown in the page history (UTC):
 - ASSESS    2026-10-12 17:38:13  (sent from Studio by the owner account)
             phase PROVISIONAL, candidate POSTPONED, deadline 17:43:13
 - FINALIZE  2026-10-12 17:45:58  (sent from the web page, signed with the
-            browser's throwaway key 0x561bf04e68F60F9784FA47e18ABE1B9A8E1C84d7)
-            page reported: finalize accepted, Tx
-            0xe0c380abf3dcad1fc1444d7d1df240fadbfbefcb9e2d17df3e94722bddee9f5a
+            browser's throwaway key 0x561bf04e68F60F9784FA47e18ABE1B9A8E1C84d7;
+            confirmed by the Caller column below)
 - Result: phase FINALIZED, last_finalized_status POSTPONED, last_finalized_round 3,
   history_count 9.
 
@@ -21,6 +20,16 @@ Caller check (history table of the updated page, Caller column):
 - rows 0 to 7 (START and ASSESS of both days): 0x2D69D4...4bca (owner account used in Studio)
 - row 8 (FINALIZE of round 3): 0x561bf0...84d7, the throwaway key shown by the page
   as "Throwaway account". The finalize was therefore signed by the page.
+
+Repeat presses: the page was used to press Finalize again after the round was
+already FINALIZED. The updated page then reported "accepted by the network, but
+no new history row appeared, so the contract may have rejected the call" (Tx
+0xe7fa4db76634ce9e97c4a88952979d7d01c9ec741ca407f40802fe31fb597690). That is
+expected: finalize only works in the PROVISIONAL phase. An earlier page version
+showed "finalize accepted" with Tx
+0xe0c380abf3dcad1fc1444d7d1df240fadbfbefcb9e2d17df3e94722bddee9f5a without
+checking the history, so that hash may belong to a repeat press and is not used
+as proof of row 8. The proof is the Caller column.
 
 Observed problem: during the finalize attempt the page first showed
 "finalize failed: ... Failed to fetch". After reloading, the history already held
