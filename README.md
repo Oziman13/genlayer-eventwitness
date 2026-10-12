@@ -111,6 +111,29 @@ identical outcomes are weak evidence of stability, not proof.
 Studio is a hosted development network and can be reset; if the address above no
 longer resolves, the raw values in `evidence/live-run-1.txt` are the record.
 
+## Web client
+
+`web/` is a static page (no server) that reads and drives the deployed contract
+through `genlayer-js` on Studionet. Open `web/index.html` locally or serve the
+folder with GitHub Pages.
+
+- Reads `get_state_json` and every `get_history_json` row and shows the event,
+  current reading, round, phase, challenge deadline, sources and full history.
+- `challenge` and `finalize` can be sent by anyone, signed with a throwaway key
+  kept in the browser; the page waits for the transaction to be accepted and
+  reloads the state.
+- Owner actions (`start_round`, `assess`, `add_source`, `remove_source`) unlock
+  when the owner pastes a Studio test key. The key stays in memory only.
+- Contract address can be changed in the page or with `?address=0x...`, so any
+  EventWitness deployment can be inspected.
+- `web/app.js` is a bundle of `web/src/main.js` and `genlayer-js` (esbuild), so
+  the page has no CDN dependency. To rebuild: install `genlayer-js` and `esbuild`,
+  then bundle `src/main.js` to `app.js` as an IIFE for the browser.
+- Checked so far: rendering and the read path against a mocked Studionet RPC in
+  headless Chromium (history text is escaped, not injected as HTML), and that
+  write calls reach the SDK's signing and gas steps. A mocked RPC cannot show
+  that live Studionet accepts the transactions, so that is not claimed here.
+
 ## Known limitations
 
 - **Source trust.** The owner chooses the three sources. "Different sites" is a

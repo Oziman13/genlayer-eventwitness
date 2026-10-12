@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EventWitness</title>
+<style>
+  :root{--bg:#f7f5ff;--card:#fff;--ink:#1e1b3a;--muted:#5b5878;--line:#e6defa;--accent:#6b46c1;
+        --ok:#1e8e5a;--warn:#b7791f;--bad:#c0392b}
+  @media (prefers-color-scheme:dark){:root{--bg:#14121f;--card:#1d1a2e;--ink:#ece9ff;--muted:#a9a5c6;--line:#322d4d;--accent:#a78bfa;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  main{max-width:860px;margin:0 auto;padding:24px 16px 64px}
+  h1{margin:0 0 4px;font-size:28px} h2{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+  .sub{color:var(--muted);margin:0 0 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+  .badge{display:inline-block;padding:4px 12px;border-radius:999px;font-weight:700;font-size:14px;border:1px solid var(--line)}
+  .SCHEDULED,.FINALIZED{color:var(--ok)} .POSTPONED,.PROVISIONAL,.NEEDS_EVIDENCE{color:var(--warn)} .CANCELLED,.CONFLICT{color:var(--bad)} .UNKNOWN,.IDLE,.OPEN{color:var(--muted)}
+  dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}
+  dt{color:var(--muted)} dd{margin:0;word-break:break-all}
+  table{width:100%;border-collapse:collapse;font-size:14px} th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top;word-break:break-word}
+  th{color:var(--muted);font-weight:600}
+  input,button{font:inherit;border-radius:10px;border:1px solid var(--line);padding:9px 12px;background:var(--card);color:var(--ink)}
+  input{width:100%;margin-bottom:8px}
+  button{background:var(--accent);color:#fff;border:0;font-weight:600;cursor:pointer} button:disabled{opacity:.5;cursor:not-allowed}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+  .msg{margin-top:10px;font-size:14px;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+  .err{color:var(--bad)} .small{font-size:13px;color:var(--muted)} a{color:var(--accent)}
+  ul{margin:0;padding-left:18px}
+</style>
+</head>
+<body>
+<main>
+  <h1>EventWitness</h1>
+  <p class="sub">A challengeable, multi-source status feed for one event, running as a GenLayer Intelligent Contract on Studionet.</p>
+
+  <div class="card">
+    <h2>Contract</h2>
+    <input id="addr" spellcheck="false" aria-label="Contract address">
+    <div class="row"><button id="load">Load state</button><span class="small" id="loadmsg"></span></div>
+  </div>
+
+  <div id="app" hidden>
+    <div class="card">
+      <div class="row"><div><h2>Event</h2><div id="event" style="font-size:20px;font-weight:700"></div><div class="small" id="date"></div></div>
+        <div style="text-align:right"><h2>Current reading</h2><span class="badge" id="outcome"></span></div></div>
+    </div>
+
+    <div class="card">
+      <h2>Round</h2>
+      <dl>
+        <dt>Round</dt><dd id="round"></dd>
+        <dt>Phase</dt><dd><span class="badge" id="phase"></span></dd>
+        <dt>Candidate</dt><dd id="cand"></dd>
+        <dt>Challenge deadline</dt><dd id="deadline"></dd>
+        <dt>Challenge used</dt><dd id="chused"></dd>
+        <dt>Last finalized</dt><dd id="lastfin"></dd>
+      </dl>
+    </div>
+
+    <div class="card">
+      <h2>Sources</h2>
+      <ul id="sources"></ul>
+      <p class="small" id="hosts"></p>
+    </div>
+
+    <div class="card">
+      <h2>History</h2>
+      <table><thead><tr><th>#</th><th>Time (UTC)</th><th>Action</th><th>Outcome</th><th>Note</th></tr></thead><tbody id="hist"></tbody></table>
+    </div>
+
+    <div class="card">
+      <h2>Act on the feed</h2>
+      <p class="small">Anyone can challenge a provisional decision once per round with one extra page from a configured host, or finalize after the deadline. These calls are signed with a throwaway key kept in this browser. Owner actions are in the next card.</p>
+      <input id="curl" placeholder="Evidence URL (https, on a configured host)">
+      <input id="cnote" placeholder="Short note: what does this page show?">
+      <div class="row" style="justify-content:flex-start">
+        <button id="chal">Challenge</button>
+        <button id="fin" class="ghost">Finalize</button>
+        <button id="refresh" class="ghost">Refresh</button>
+      </div>
+      <div class="small" id="acct" style="margin-top:10px"></div>
+      <div class="msg" id="txmsg"></div>
+    </div>
+
+    <div class="card" id="ownercard">
+      <h2>Owner actions</h2>
+      <p class="small">For the contract owner (the account that deployed it). Paste the Studio test account key to unlock these. The key is kept in memory only and is never stored or sent anywhere except to sign transactions for Studionet. Use a Studio test key, never a key that holds real funds.</p>
+      <input id="okey" type="password" autocomplete="off" placeholder="Owner private key (Studio test account)">
+      <div class="row" style="justify-content:flex-start"><button id="okeyset" class="ghost">Use owner key</button><span class="small" id="okeymsg"></span></div>
+      <div class="row" style="justify-content:flex-start;margin-top:10px">
+        <button id="oround" disabled>Start round</button>
+        <button id="oassess" disabled>Assess</button>
+      </div>
+      <input id="osrc" placeholder="Source URL to add or remove (https, configured host)" style="margin-top:10px">
+      <div class="row" style="justify-content:flex-start">
+        <button id="oadd" class="ghost" disabled>Add source</button>
+        <button id="orem" class="ghost" disabled>Remove source</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="small">Decisions are LLM readings of public pages, not legal determinations. Source code and evidence: <a href="https://github.com/Oziman13/genlayer-eventwitness">github.com/Oziman13/genlayer-eventwitness</a></p>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
