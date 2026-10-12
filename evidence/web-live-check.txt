@@ -17,6 +17,11 @@ Round 3, steps and times as shown in the page history (UTC):
 - Result: phase FINALIZED, last_finalized_status POSTPONED, last_finalized_round 3,
   history_count 9.
 
+Caller check (history table of the updated page, Caller column):
+- rows 0 to 7 (START and ASSESS of both days): 0x2D69D4...4bca (owner account used in Studio)
+- row 8 (FINALIZE of round 3): 0x561bf0...84d7, the throwaway key shown by the page
+  as "Throwaway account". The finalize was therefore signed by the page.
+
 Observed problem: during the finalize attempt the page first showed
 "finalize failed: ... Failed to fetch". After reloading, the history already held
 the FINALIZE row, so the call had gone through. The success message of that
