@@ -1,5 +1,11 @@
 # EventWitness
 
+> **EventWitness app.** This repository was renamed from `genlayer-eventwitness`
+> to `genlayer-eventwitness-app`; the old address redirects here. Its contract was
+> accepted earlier as a standalone Intelligent Contract. The web client in `web/`,
+> its live check (`evidence/web-live-check.txt`) and the documentation around it
+> are the new work added in this repository since then.
+
 A bounded, challengeable status feed for **one event**, built as a GenLayer
 Intelligent Contract. Three registered sources on three different sites are
 read independently by validators; the contract records whether the event is
