@@ -1,0 +1,28 @@
+EventWitness web client, live check on GenLayer Studionet
+Date: 2026-10-12
+Page: https://oziman13.github.io/genlayer-eventwitness/web/
+Contract: 0xD1c4378e3D278e33B49B670ECe629b0e4945D977 (same instance as live-run-1.txt)
+
+Read path (observed in the browser):
+- Event, round, phase, sources and all history rows load from Studionet.
+
+Round 3, steps and times as shown in the page history (UTC):
+- START     2026-10-12 17:37:12  (sent from Studio by the owner account)
+- ASSESS    2026-10-12 17:38:13  (sent from Studio by the owner account)
+            phase PROVISIONAL, candidate POSTPONED, deadline 17:43:13
+- FINALIZE  2026-10-12 17:45:58  (sent from the web page, signed with the
+            browser's throwaway key 0x561bf04e68F60F9784FA47e18ABE1B9A8E1C84d7)
+            page reported: finalize accepted, Tx
+            0xe0c380abf3dcad1fc1444d7d1df240fadbfbefcb9e2d17df3e94722bddee9f5a
+- Result: phase FINALIZED, last_finalized_status POSTPONED, last_finalized_round 3,
+  history_count 9.
+
+Observed problem: during the finalize attempt the page first showed
+"finalize failed: ... Failed to fetch". After reloading, the history already held
+the FINALIZE row, so the call had gone through. The success message of that
+version did not check whether the contract applied the call. The current version
+reloads the state after every transaction (and after an error) and reports
+success only if the history grew.
+
+Not exercised live from the page: challenge, and the owner actions (start_round,
+assess, add_source, remove_source). Those two rounds' START and ASSESS were sent from Studio.

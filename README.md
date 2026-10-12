@@ -130,9 +130,11 @@ folder with GitHub Pages.
   the page has no CDN dependency. To rebuild: install `genlayer-js` and `esbuild`,
   then bundle `src/main.js` to `app.js` as an IIFE for the browser.
 - Checked so far: rendering and the read path against a mocked Studionet RPC in
-  headless Chromium (history text is escaped, not injected as HTML), and that
-  write calls reach the SDK's signing and gas steps. A mocked RPC cannot show
-  that live Studionet accepts the transactions, so that is not claimed here.
+  headless Chromium (history text is escaped, not injected as HTML). On live
+  Studionet (2026-10-12) the page read the real state and sent `finalize` with
+  its browser key; the round went from PROVISIONAL to FINALIZED and the history
+  gained the row (`evidence/web-live-check.txt`). `challenge` and the owner
+  actions have not been exercised live from the page.
 
 ## Known limitations
 

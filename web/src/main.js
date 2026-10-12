@@ -16,11 +16,13 @@ $("acct").textContent = "Throwaway account: " + account.address;
 
 let client = createClient({ chain: studionet, account });
 let ownerAccount = null;
+let lastCount = null;
 const mk = acc => createClient({ chain: studionet, account: acc });
 const qs = new URLSearchParams(location.search);
 $("addr").value = qs.get("address") || DEFAULT;
 
 const utc = t => t ? new Date(t * 1000).toISOString().replace("T", " ").slice(0, 19) : "-";
+const short = a => a ? String(a).slice(0, 8) + "..." + String(a).slice(-4) : "";
 const fmtParse = s => { try { return JSON.parse(s); } catch { return null; } };
 
 async function view(fn, args = []) {
@@ -49,10 +51,11 @@ async function load() {
     const rows = [];
     for (let i = 0; i < st.history_count; i++) {
       const r = fmtParse(await view("get_history_json", [i]));
-      if (r) rows.push(`<tr><td>${i}</td><td>${esc(utc(r.time ?? r.timestamp ?? r.at))}</td><td>${esc(r.action)}</td><td>${esc(r.outcome)}</td><td>${esc(r.note || "")}</td></tr>`);
-      else rows.push(`<tr><td>${i}</td><td colspan="4">unreadable row</td></tr>`);
+      if (r) rows.push(`<tr><td>${i}</td><td>${esc(utc(r.time ?? r.timestamp ?? r.at))}</td><td>${esc(r.action)}</td><td>${esc(r.outcome)}</td><td>${esc(r.note || "")}</td><td>${esc(short(r.caller))}</td></tr>`);
+      else rows.push(`<tr><td>${i}</td><td colspan="5">unreadable row</td></tr>`);
     }
-    $("hist").innerHTML = rows.join("") || '<tr><td colspan="5">No history yet</td></tr>';
+    lastCount = st.history_count;
+    $("hist").innerHTML = rows.join("") || '<tr><td colspan="6">No history yet</td></tr>';
     $("loadmsg").textContent = "Loaded.";
   } catch (e) {
     $("loadmsg").textContent = "Could not read the contract: " + (e.message || e);
@@ -67,16 +70,22 @@ async function send(fn, args, asOwner = false) {
   const m = $("txmsg"); m.className = "msg";
   m.textContent = `Sending ${fn}...`;
   setBusy(true);
+  const before = lastCount;
   try {
     const c = asOwner ? mk(ownerAccount) : client;
     const hash = await c.writeContract({ address: $("addr").value.trim(), functionName: fn, args, value: 0n });
     m.textContent = `Sent ${fn}. Tx ${hash}\nWaiting for consensus (this can take a minute)...`;
     await c.waitForTransactionReceipt({ hash, status: "ACCEPTED", retries: 120, interval: 5000 });
-    m.textContent = `${fn} accepted. Tx ${hash}`;
     await load();
+    const grew = before !== null && lastCount !== null && lastCount > before;
+    m.textContent = grew
+      ? `${fn} applied: the history grew by ${lastCount - before} row(s). Tx ${hash}`
+      : `${fn} was accepted by the network, but no new history row appeared, so the contract may have rejected the call. Tx ${hash}`;
   } catch (e) {
     m.className = "msg err";
-    m.textContent = `${fn} failed: ` + (e.message || e);
+    m.textContent = `${fn} did not complete: ` + (e.message || e) + "\nReloading state to check whether it went through...";
+    await load();
+    if (before !== null && lastCount > before) { m.className = "msg"; m.textContent = `${fn} went through despite the network error: the history grew by ${lastCount - before} row(s).`; }
   } finally {
     setBusy(false);
   }
