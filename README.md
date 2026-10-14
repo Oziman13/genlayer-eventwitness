@@ -165,6 +165,8 @@ asks for or stores a private key.
 - **Run the tests** (Node 20+): `npm ci`, then `npx playwright-core install chromium`, then `npm test`
   (set `CHROMIUM_PATH` to use an existing Chromium). `npm run build` rebuilds `web/app.js` from `web/src`.
   The contract tests run separately: `pip install genlayer-test pytest` and `npm run test:contract`.
+- Live check 2 (2026-10-14, MetaMask, Studionet, the build with ambiguous-send recovery): start round, assess and finalize of round 3 on
+  `0x0E8d…941c`, each reported applied only after FINALIZED + success (`evidence/wallet-live-check-2.txt`, tx hashes for assess and finalize).
 - Live check of this wallet client (2026-10-14, MetaMask, Studionet): deploy from the page, start round, assess and
   finalize all reported applied only after FINALIZED + success, and the round ended FINALIZED/POSTPONED
   (`evidence/wallet-live-check.txt`, contract `0x0E8dA749ff4DfED265745505c53d73a1eEdc941c`). Challenge, source edits,
