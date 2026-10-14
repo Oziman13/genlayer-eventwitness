@@ -25,6 +25,7 @@ Second live round, same contract (after the fixes were deployed, 2026-10-14 ~10:
 8. The page was opened without ?address= and reloaded the last used contract (0x0E8dA7...941c) on its own.
 9. Start round and Assess were run again; while the challenge window was open Finalize stayed disabled with its reason.
    When the window passed, Finalize became enabled by itself, with no refresh or click (reported by the owner from the live page).
-   The finalize transaction of this second round was not sent; only the enabling of the button was observed.
+   The owner then pressed Finalize on this second round and reported that the transaction completed (round finalized).
+   No screenshot or transaction hash of this second finalize was recorded; it is the owner's report.
 
 Not exercised live: challenge (from another account), add_source/remove_source, the refused-transaction path, interrupted-transaction resume, a wrong-network switch. These are covered only by the mock-wallet browser tests.
