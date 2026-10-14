@@ -21,4 +21,10 @@ Observed:
    Result: phase FINALIZED, last finalized POSTPONED (round 1). History rows: START 06:38:35, ASSESS 06:39:30, FINALIZE 06:50:44 (UTC), caller 0x663247...5350.
 7. Observed defect (fixed afterwards): the page did not re-evaluate buttons when the deadline passed, so Finalize stayed disabled until Refresh. A 5-second re-render was added. Also, a plain reload reopened the built-in default contract; the page now remembers the last loaded address.
 
+Second live round, same contract (after the fixes were deployed, 2026-10-14 ~10:00-10:15 local time):
+8. The page was opened without ?address= and reloaded the last used contract (0x0E8dA7...941c) on its own.
+9. Start round and Assess were run again; while the challenge window was open Finalize stayed disabled with its reason.
+   When the window passed, Finalize became enabled by itself, with no refresh or click (reported by the owner from the live page).
+   The finalize transaction of this second round was not sent; only the enabling of the button was observed.
+
 Not exercised live: challenge (from another account), add_source/remove_source, the refused-transaction path, interrupted-transaction resume, a wrong-network switch. These are covered only by the mock-wallet browser tests.
