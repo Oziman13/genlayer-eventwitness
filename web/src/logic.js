@@ -49,3 +49,22 @@ export function validateSetup(form) {
   else if (new Set(form.sources.map(SITE)).size !== 3) errs.push("The three sources must be on three distinct sites.");
   return errs;
 }
+
+// Did the contract's state change in the way this action would have changed it? Only a hint for the
+// user while a transaction is unresolved; it never clears a pending record by itself.
+export function snapshotOf(state) {
+  return state ? { round: state.round, phase: state.phase, history_count: state.history_count, sources: [...(state.sources || [])], challenge_used: state.challenge_used } : null;
+}
+export function effectSeen(fn, args, before, now) {
+  if (!before || !now) return null;
+  const has = (s, u) => (s.sources || []).includes(u);
+  switch (fn) {
+    case "start_round": return now.round > before.round || (now.phase === "OPEN" && before.phase !== "OPEN");
+    case "assess": return now.history_count > before.history_count;
+    case "add_source": return has(now, args[0]) && !has(before, args[0]);
+    case "remove_source": return !has(now, args[0]) && has(before, args[0]);
+    case "challenge": return !!now.challenge_used && !before.challenge_used;
+    case "finalize": return now.phase === "FINALIZED" && before.phase !== "FINALIZED";
+    default: return null;
+  }
+}

@@ -120,7 +120,7 @@ longer resolves, the raw values in `evidence/live-run-1.txt` are the record.
 ## Web client
 
 `web/` is a static page (no server). `web/app.js` is a bundle of `web/src/*.js` and `genlayer-js` 1.1.8
-(esbuild), so there is no CDN dependency. It reads and drives an EventWitness deployment on Studionet.
+(esbuild), so there is no CDN dependency. Dependencies are pinned in `package.json` / `package-lock.json`. It reads and drives an EventWitness deployment on Studionet.
 Every write is signed by the user's own EIP-1193 wallet (MetaMask or similar). The page never creates,
 asks for or stores a private key.
 
@@ -131,30 +131,54 @@ asks for or stores a private key.
   assessments, remove only for extra sources). A line under every disabled button says why.
 - **Transaction lifecycle** (`web/src/wallet.js`): a transaction counts as done only when the network status is
   FINALIZED and the execution result is a success. ACCEPTED is shown as in progress. FINALIZED with an error
-  result is reported as refused by the contract; UNDETERMINED, CANCELED and timeouts as not applied. If the
-  wallet errors while the account's transaction count moved, the page says the transaction may have been
-  sent and does not invite a blind resend. The hash of an open transaction is kept so a reload resumes
-  watching it. A user rejection is reported as "nothing was sent". The page does not infer success from the
-  history length.
+  result is reported as refused by the contract; UNDETERMINED, CANCELED and timeouts as not applied. A user
+  rejection is reported as "nothing was sent". The page does not infer success from the history length.
+- **Ambiguous sends and reload recovery** (`web/src/wallet.js`, `web/src/recovery.js`): a pending record is
+  written *before* the wallet is asked to sign and kept until the outcome is known. It stores the account, the
+  network (chain id), the contract, the action and its arguments, the account's transaction count (nonce)
+  before sending, and a snapshot of the contract state. If the wallet errors, or the page closes during
+  signing, and the nonce moved (or could not be read), the send is treated as possibly broadcast: **every send,
+  including deploy, is blocked** and an "Unfinished transaction" panel shows that context. On reload (or "Check
+  again") the page asks the node for the account's transactions (`sim_getTransactionsForAddress`) and keeps only
+  those from that account, to that contract (any for a deploy), with nonce >= the recorded one and created
+  after the record. Exactly one match is followed to FINALIZED and reported normally; several matches are
+  listed and nothing is guessed; no match with an unchanged nonce is reported as "not sent" and unlocks; no
+  match with a moved nonce stays unresolved (with the account history link and, if the contract state shows the
+  action's effect, a hint). A manual "I checked: it was not sent" release exists for the unresolved case.
+  Reload recovery switches the Contract box to the *recorded* contract before following the transaction, and a
+  recovered deployment's address is adopted only from a FINALIZED + successful receipt.
 - **Setup workflow**: "Set up a new event feed" validates the form (identity, date, window 300 to 86400 s,
   exactly three https sources on three distinct sites, mirroring the contract's heuristic), fetches
   `contracts/event_witness.py` from this repository, deploys through the wallet, and adopts the new address
   only after FINALIZED + success, then shows a share link.
 - **Tests**: `tests/browser/wallet_flow.test.mjs` runs the real page in headless Chromium against a mock
-  EIP-1193 wallet and a mock Studio RPC (39 checks, `evidence/browser-tests.txt`): connect and network
-  add/switch, user rejection, roles and phases, challenge and finalize outcomes, contract refusal,
-  undetermined, ambiguous send, wrong network at send time, resume after reload, deploy workflow and
-  refused deploy, hostile text rendering. They prove the page's logic, not real MetaMask or real Studionet
-  behaviour.
+  EIP-1193 wallet and a mock Studio RPC (82 checks, `evidence/browser-tests.txt`): connect and network
+  add/switch, user rejection, roles and phases; the owner wallet paths `start_round`, `add_source` and
+  `remove_source` (signed by the owner, call data names the function and the URL, ACCEPTED shown as in progress,
+  applied only after FINALIZED + success, refused by the contract, state reloaded) plus `challenge`, `assess`
+  and `finalize`; undetermined; wrong network at send time; the ambiguous-send cases (context saved, all
+  sends blocked, no blind resend, located after reload, several candidates, nothing listed, listing
+  unavailable, nonce unreadable, reload during signing, "not sent" when the nonce did not move, manual
+  release); reload recovery on the recorded contract; deploy recovery (address adopted only after FINALIZED +
+  success, refused deploy, receipt without an address); hostile text rendering. They prove the page's logic,
+  not real MetaMask or real Studionet behaviour.
+- **Run the tests** (Node 20+): `npm ci`, then `npx playwright-core install chromium`, then `npm test`
+  (set `CHROMIUM_PATH` to use an existing Chromium). `npm run build` rebuilds `web/app.js` from `web/src`.
+  The contract tests run separately: `pip install genlayer-test pytest` and `npm run test:contract`.
 - Live check of this wallet client (2026-10-14, MetaMask, Studionet): deploy from the page, start round, assess and
   finalize all reported applied only after FINALIZED + success, and the round ended FINALIZED/POSTPONED
   (`evidence/wallet-live-check.txt`, contract `0x0E8dA749ff4DfED265745505c53d73a1eEdc941c`). Challenge, source edits,
-  the refused-transaction path and resume were not exercised live. An earlier throwaway-key client was checked
+  the refused-transaction path, resume and the ambiguous-send recovery were not exercised live. An earlier throwaway-key client was checked
   on 2026-10-12 (`evidence/web-live-check.txt`) and has been replaced.
 - The page re-evaluates its buttons every 5 seconds (deadlines pass without a click) and remembers the last loaded address.
 
 ## Known limitations
 
+- **Locating an unknown transaction depends on the node's listing.** The page uses the Studio method
+  `sim_getTransactionsForAddress` and normalises the response defensively (hash, from, to, nonce, time). The
+  matching rules and every outcome are covered by the mock tests, but the exact live response shape was not
+  checked against the real node from the build environment. If the node cannot list, the nonce decides
+  "not sent" versus "unresolved", and an unresolved record stays blocked until it is re-checked or released by hand.
 - **Source trust.** The owner chooses the three sources. "Different sites" is a
   heuristic (last two labels, or three for common second-level suffixes such as
   `co.uk`, `com.tr`), not the public-suffix list, and does not prove the sources

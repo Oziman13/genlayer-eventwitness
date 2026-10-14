@@ -131,24 +131,52 @@ export async function watchTx(client, hash, { onUpdate, pollMs = 3000, timeoutMs
   }
 }
 
+// A "pending record" is written BEFORE the wallet is asked to sign, and kept until the outcome is
+// known. It carries the account, network, contract, action, arguments and the account nonce at that
+// moment, so a send that may have been broadcast (wallet error, closed tab, crash) can be located and
+// reconciled after a reload before anything is sent again. stage: signing | ambiguous | sent.
+const finite = n => Number.isFinite(n) ? n : null;
+
+export async function readNonce(client, address) {
+  try { return finite(Number(await client.getCurrentNonce({ address }))); } catch { return null; }
+}
+
 export async function sendAndConfirm({ client, address, build, onUpdate, label, pollMs, timeoutMs, sleep, remember }) {
-  let nonceBefore = null;
-  try { nonceBefore = Number(await client.getCurrentNonce({ address })); } catch { /* best effort */ }
+  const nonceBefore = await readNonce(client, address);
+  const base = { label, ...remember, account: address, chainId: CHAIN_ID_HEX, nonceBefore, at: Date.now() };
+  remember && savePending({ ...base, stage: "signing" });
   let hash;
   try {
     hash = await build();
   } catch (e) {
-    if (isUserRejection(e)) return { kind: "REJECTED_BY_USER", message: "You declined the request in the wallet. Nothing was sent." };
-    let nonceAfter = null;
-    try { nonceAfter = Number(await client.getCurrentNonce({ address })); } catch { /* ignore */ }
-    if (nonceBefore !== null && nonceAfter !== null && nonceAfter > nonceBefore) {
-      return { kind: "AMBIGUOUS", message: "The wallet reported an error, but the account's transaction count went up, so the transaction may have been sent. Check the history and the explorer before trying again.", error: String(e?.message || e) };
+    if (isUserRejection(e)) { clearPending(); return { kind: "REJECTED_BY_USER", message: "You declined the request in the wallet. Nothing was sent." }; }
+    const nonceAfter = await readNonce(client, address);
+    if (nonceBefore === null || nonceAfter === null) {
+      remember && savePending({ ...base, stage: "ambiguous", nonceAfter });
+      return { kind: "AMBIGUOUS", message: "The wallet reported an error and the account's transaction count could not be read, so the transaction may have been sent. It is blocked from being repeated until it is reconciled below.", error: String(e?.message || e) };
     }
+    if (nonceAfter > nonceBefore) {
+      remember && savePending({ ...base, stage: "ambiguous", nonceAfter });
+      return { kind: "AMBIGUOUS", message: "The wallet reported an error, but the account's transaction count went up, so the transaction may have been sent. It is blocked from being repeated until it is reconciled below.", error: String(e?.message || e) };
+    }
+    clearPending();
     return { kind: "NOT_SENT", message: "The transaction was not sent: " + String(e?.message || e), error: String(e?.message || e) };
   }
-  remember && savePending({ hash, label, ...remember, at: Date.now() });
+  remember && savePending({ ...base, stage: "sent", hash });
   onUpdate && onUpdate({ stage: "submitted", hash });
   const outcome = await watchTx(client, hash, { onUpdate, pollMs, timeoutMs, sleep });
   if (outcome.kind !== "STILL_PENDING") clearPending();
   return outcome;
+}
+
+// ---- locate a transaction that may have been broadcast without a known hash ----------------------
+// Uses the Studio node's per-account listing (sim_getTransactionsForAddress). The response shape is
+// normalised defensively; if the node cannot answer, the caller falls back to the nonce check.
+const RPC_URL = studionet.rpcUrls.default.http[0];
+export async function listAccountTxs(account, filter = "from") {
+  const r = await fetch(RPC_URL, { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "sim_getTransactionsForAddress", params: [account, filter] }) });
+  const j = await r.json();
+  if (j.error || !Array.isArray(j.result)) throw new Error(j.error?.message || "unexpected listing response");
+  return j.result;
 }

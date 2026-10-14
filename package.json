@@ -1,0 +1,19 @@
+{
+  "name": "genlayer-eventwitness-app",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Wallet-based web client for the EventWitness Intelligent Contract on GenLayer Studionet",
+  "scripts": {
+    "build": "esbuild web/src/main.js --bundle --format=iife --minify --outfile=web/app.js",
+    "test": "node tests/browser/wallet_flow.test.mjs",
+    "test:contract": "python3 -m pytest tests/direct -v"
+  },
+  "dependencies": {
+    "genlayer-js": "1.1.8"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "playwright-core": "1.64.0"
+  }
+}
