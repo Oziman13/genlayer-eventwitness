@@ -141,13 +141,17 @@ asks for or stores a private key.
   `contracts/event_witness.py` from this repository, deploys through the wallet, and adopts the new address
   only after FINALIZED + success, then shows a share link.
 - **Tests**: `tests/browser/wallet_flow.test.mjs` runs the real page in headless Chromium against a mock
-  EIP-1193 wallet and a mock Studio RPC (38 checks, `evidence/browser-tests.txt`): connect and network
+  EIP-1193 wallet and a mock Studio RPC (39 checks, `evidence/browser-tests.txt`): connect and network
   add/switch, user rejection, roles and phases, challenge and finalize outcomes, contract refusal,
   undetermined, ambiguous send, wrong network at send time, resume after reload, deploy workflow and
   refused deploy, hostile text rendering. They prove the page's logic, not real MetaMask or real Studionet
   behaviour.
-- Earlier live check (2026-10-12, previous throwaway-key client, `evidence/web-live-check.txt`): the page read
-  real state and sent `finalize`. That client has been replaced; the wallet client has not been run live yet.
+- Live check of this wallet client (2026-10-14, MetaMask, Studionet): deploy from the page, start round, assess and
+  finalize all reported applied only after FINALIZED + success, and the round ended FINALIZED/POSTPONED
+  (`evidence/wallet-live-check.txt`, contract `0x0E8dA749ff4DfED265745505c53d73a1eEdc941c`). Challenge, source edits,
+  the refused-transaction path and resume were not exercised live. An earlier throwaway-key client was checked
+  on 2026-10-12 (`evidence/web-live-check.txt`) and has been replaced.
+- The page re-evaluates its buttons every 5 seconds (deadlines pass without a click) and remembers the last loaded address.
 
 ## Known limitations
 

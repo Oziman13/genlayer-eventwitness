@@ -1,0 +1,24 @@
+Live check of the wallet-based client on Studionet, 2026-10-14 (done by hand in a browser with MetaMask).
+Transcribed from the owner's screenshots; hashes were read from screenshots and may contain transcription slips: confirm in the explorer.
+
+Page:      https://oziman13.github.io/genlayer-eventwitness-app/web/
+Wallet:    MetaMask, a fresh test account 0x663247C083DcBB64e0c8c3bFacd53026427e5350 (not the main wallet)
+Contract:  0x0E8dA749ff4DfED265745505c53d73a1eEdc941c  (deployed from the page's "Set up a new event feed" form)
+Event:     Tokyo 2020 Summer Olympics (Games of the XXXII Olympiad), Tokyo, Japan, original date 2020-07-24
+Sources:   en.wikipedia.org, whyy.org, www.boston.com (three distinct sites)
+
+Observed:
+1. Without a wallet connected, every action was disabled with a reason ("Connect a wallet.").
+2. Connect wallet: MetaMask added/switched to GenLayer Studio; page showed the account and "role: owner".
+3. Deploy through the page: wallet-signed; the page adopted the new address after the network finished the deploy and printed a share link.
+4. Phase IDLE: only Start round and Add source were enabled; the others showed reasons.
+5. Start round, then Assess: both reported "applied: the transaction is FINALIZED and the contract call succeeded".
+   Assess tx: 0xc474f563f80403195d4177569ca29ffc48a3ecad90bc314fe36f2ddf697c5a74
+   Result: round 1, PROVISIONAL, candidate POSTPONED, challenge deadline 2026-10-14 06:44:30 UTC.
+   While the window was open: Finalize disabled ("The challenge window is still open."), Start round disabled ("A round is already active.").
+6. After the window: Finalize applied.
+   Finalize tx: 0x7b5faf13d47a3b3cb7ee6eae6accc1a38d1e218e9ebae600e4f481f22a9650f4
+   Result: phase FINALIZED, last finalized POSTPONED (round 1). History rows: START 06:38:35, ASSESS 06:39:30, FINALIZE 06:50:44 (UTC), caller 0x663247...5350.
+7. Observed defect (fixed afterwards): the page did not re-evaluate buttons when the deadline passed, so Finalize stayed disabled until Refresh. A 5-second re-render was added. Also, a plain reload reopened the built-in default contract; the page now remembers the last loaded address.
+
+Not exercised live: challenge (from another account), add_source/remove_source, the refused-transaction path, interrupted-transaction resume, a wrong-network switch. These are covered only by the mock-wallet browser tests.

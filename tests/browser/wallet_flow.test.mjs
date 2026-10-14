@@ -262,6 +262,14 @@ const loaded = async c => { await c.open(`&address=${CONTRACT}`); await c.p.wait
   ok("deploy refused: reported and address NOT adopted", await waitText(c.p, "#txmsg", /contract refused it/) && (await c.p.inputValue("#addr")) === CONTRACT);
   await c.ctx.close();
 }
+{ // remembers the last loaded address across a plain reload
+  const c = await newCase({ state: baseState({ event: "Remembered feed" }) });
+  await loaded(c);
+  await c.p.goto(`http://localhost:${PORT}/index.html?poll=50`);
+  await c.p.waitForSelector("#event", { state: "visible" });
+  ok("reload without ?address= reopens the last loaded contract", (await c.p.inputValue("#addr")) === CONTRACT && (await text(c.p, "#event")) === "Remembered feed");
+  await c.ctx.close();
+}
 { // hostile content
   const c = await newCase({ state: baseState({ event: "<img src=x onerror=alert(1)>" }) });
   const dialogs = []; c.p.on("dialog", d => { dialogs.push(d.message()); d.dismiss(); });

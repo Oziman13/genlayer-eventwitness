@@ -34,7 +34,8 @@ PASS setup: window out of range rejected
 PASS setup: deploy signed by wallet
 PASS setup: new address adopted only after FINALIZED+SUCCESS and share link shown
 PASS deploy refused: reported and address NOT adopted
+PASS reload without ?address= reopens the last loaded contract
 PASS hostile event text rendered as text
 PASS no page errors in the whole run
 
-38 passed, 0 failed
+39 passed, 0 failed

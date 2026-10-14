@@ -20,7 +20,9 @@ let state = null;
 let busy = false;
 
 const DEFAULT = "0xD1c4378e3D278e33B49B670ECe629b0e4945D977";
-$("addr").value = new URLSearchParams(location.search).get("address") || DEFAULT;
+const LAST = "ew_last_address";
+const lastAddr = () => { try { return localStorage.getItem(LAST); } catch { return null; } };
+$("addr").value = new URLSearchParams(location.search).get("address") || lastAddr() || DEFAULT;
 
 function say(text, err = false) { const m = $("txmsg"); m.className = "msg" + (err ? " err" : ""); m.textContent = text; }
 const txLink = h => EXPLORER ? `\nExplorer: ${EXPLORER}/tx/${h}` : "";
@@ -105,6 +107,7 @@ async function load() {
     }
     $("hist").innerHTML = rows.join("") || '<tr><td colspan="6">No history yet</td></tr>';
     msg.textContent = "Loaded.";
+    try { localStorage.setItem(LAST, $("addr").value.trim()); } catch { /* storage may be blocked */ }
     renderWallet();
   } catch (e) {
     msg.textContent = "Could not read the contract: " + (e.message || e);
@@ -222,6 +225,7 @@ async function resume() {
   if ($("addr").value) await load();
 }
 
+setInterval(() => { if (state && !busy) renderActions(); }, 5000); // deadlines pass without any click
 renderWallet();
 if (!hasWallet()) { $("wmsg").className = "msg err"; $("wmsg").textContent = "No browser wallet detected. You can still read any event feed; to act you need MetaMask or another EIP-1193 wallet."; }
 if ($("addr").value) load();
