@@ -1,10 +1,10 @@
 EventWitness web client, live check on GenLayer Studionet
 Date: 2026-10-12
 Page: https://oziman13.github.io/genlayer-eventwitness-app/web/
-(The check below was done before the repository was renamed from
- genlayer-eventwitness; the Pages address was then
- https://oziman13.github.io/genlayer-eventwitness/web/ and the files are unchanged
- except for the repository link in the page footer.)
+(The check below was done on the identical web client first served from the
+ original repository's Pages, https://oziman13.github.io/genlayer-eventwitness/web/;
+ the files were then moved into this app repository unchanged except for the
+ repository link in the page footer.)
 Contract: 0xD1c4378e3D278e33B49B670ECe629b0e4945D977 (same instance as live-run-1.txt)
 
 Read path (observed in the browser):

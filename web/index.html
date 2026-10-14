@@ -28,6 +28,8 @@
   .msg{margin-top:10px;font-size:14px;color:var(--muted);white-space:pre-wrap;word-break:break-word}
   .err{color:var(--bad)} .small{font-size:13px;color:var(--muted)} a{color:var(--accent)}
   ul{margin:0;padding-left:18px}
+  .actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:8px}
+  code{font-size:13px;word-break:break-all}
 </style>
 </head>
 <body>
@@ -36,9 +38,32 @@
   <p class="sub">A challengeable, multi-source status feed for one event, running as a GenLayer Intelligent Contract on Studionet.</p>
 
   <div class="card">
+    <h2>Wallet</h2>
+    <div class="row">
+      <div><span id="wstatus" class="small">Not connected.</span> <span class="badge NONE" id="rolepill" hidden></span></div>
+      <button id="connect">Connect wallet</button>
+    </div>
+    <div class="msg" id="wmsg"></div>
+    <p class="small">Every transaction is signed in your own wallet (MetaMask or any EIP-1193 wallet) on the GenLayer Studio network. This page never asks for, creates or stores a private key. Use a Studio test account, not one that holds real funds.</p>
+  </div>
+
+  <div class="card">
     <h2>Contract</h2>
     <input id="addr" spellcheck="false" aria-label="Contract address">
-    <div class="row"><button id="load">Load state</button><span class="small" id="loadmsg"></span></div>
+    <div class="row"><button id="load">Load state</button><button id="newev" class="ghost">Set up a new event feed</button><span class="small" id="loadmsg"></span></div>
+  </div>
+
+  <div class="card" id="setup" hidden>
+    <h2>Set up a new event feed (deploys a new contract)</h2>
+    <p class="small">The connected account becomes the owner. Contract code is fetched from this repository (<code>../contracts/event_witness.py</code>) and sent as a deploy transaction you sign. Three sources on three distinct sites are required.</p>
+    <input id="s_event" placeholder="Event identity, e.g. 'Tour X, Istanbul, 2026-11-20, Venue Y' (5 to 300 characters)">
+    <input id="s_date" placeholder="Original date, YYYY-MM-DD">
+    <input id="s_window" type="number" value="300" aria-label="Challenge window seconds" placeholder="Challenge window in seconds (300 to 86400)">
+    <input id="s_u1" placeholder="Source 1: https://... (e.g. the organiser)">
+    <input id="s_u2" placeholder="Source 2: https://... (a different site, e.g. the ticketing page)">
+    <input id="s_u3" placeholder="Source 3: https://... (a third site, e.g. the venue)">
+    <div class="row" style="justify-content:flex-start"><button id="s_deploy">Deploy event feed</button></div>
+    <div class="msg err" id="s_errs"></div>
   </div>
 
   <div id="app" hidden>
@@ -56,6 +81,7 @@
         <dt>Challenge deadline</dt><dd id="deadline"></dd>
         <dt>Challenge used</dt><dd id="chused"></dd>
         <dt>Last finalized</dt><dd id="lastfin"></dd>
+        <dt>Owner</dt><dd id="owner"></dd>
       </dl>
     </div>
 
@@ -71,37 +97,37 @@
     </div>
 
     <div class="card">
-      <h2>Act on the feed</h2>
-      <p class="small">Anyone can challenge a provisional decision once per round with one extra page from a configured host, or finalize after the deadline. These calls are signed with a throwaway key kept in this browser. Owner actions are in the next card.</p>
+      <h2>Anyone: challenge or finalize</h2>
+      <p class="small">Buttons are enabled only when your connected account may do that action now; the line under each says why not. A transaction counts as done only when the network has FINALIZED it and the contract call itself returned without error.</p>
       <input id="curl" placeholder="Evidence URL (https, on a configured host)">
       <input id="cnote" placeholder="Short note: what does this page show?">
-      <div class="row" style="justify-content:flex-start">
-        <button id="chal">Challenge</button>
-        <button id="fin" class="ghost">Finalize</button>
-        <button id="refresh" class="ghost">Refresh</button>
+      <div class="actions">
+        <div><button id="chal">Challenge</button><div class="small" id="r_challenge"></div></div>
+        <div><button id="fin" class="ghost">Finalize</button><div class="small" id="r_finalize"></div></div>
+        <div><button id="refresh" class="ghost">Refresh</button></div>
       </div>
-      <div class="small" id="acct" style="margin-top:10px"></div>
-      <div class="msg" id="txmsg"></div>
     </div>
 
-    <div class="card" id="ownercard">
+    <div class="card">
       <h2>Owner actions</h2>
-      <p class="small">For the contract owner (the account that deployed it). Paste the Studio test account key to unlock these. The key is kept in memory only and is never stored or sent anywhere except to sign transactions for Studionet. Use a Studio test key, never a key that holds real funds.</p>
-      <input id="okey" type="password" autocomplete="off" placeholder="Owner private key (Studio test account)">
-      <div class="row" style="justify-content:flex-start"><button id="okeyset" class="ghost">Use owner key</button><span class="small" id="okeymsg"></span></div>
-      <div class="row" style="justify-content:flex-start;margin-top:10px">
-        <button id="oround" disabled>Start round</button>
-        <button id="oassess" disabled>Assess</button>
+      <div class="actions">
+        <div><button id="o_round">Start round</button><div class="small" id="r_start"></div></div>
+        <div><button id="o_assess">Assess</button><div class="small" id="r_assess"></div></div>
       </div>
       <input id="osrc" placeholder="Source URL to add or remove (https, configured host)" style="margin-top:10px">
-      <div class="row" style="justify-content:flex-start">
-        <button id="oadd" class="ghost" disabled>Add source</button>
-        <button id="orem" class="ghost" disabled>Remove source</button>
+      <div class="actions">
+        <div><button id="o_add" class="ghost">Add source</button><div class="small" id="r_add"></div></div>
+        <div><button id="o_rem" class="ghost">Remove source</button><div class="small" id="r_remove"></div></div>
       </div>
     </div>
   </div>
 
-  <p class="small">Decisions are LLM readings of public pages, not legal determinations. Source code and evidence: <a href="https://github.com/Oziman13/genlayer-eventwitness-app">github.com/Oziman13/genlayer-eventwitness-app</a></p>
+  <div class="card">
+    <h2>Transaction</h2>
+    <div class="msg" id="txmsg">Nothing sent yet.</div>
+  </div>
+
+  <p class="small">Decisions are LLM readings of public pages, not legal determinations. Source code and evidence: <a href="https://github.com/Oziman13/genlayer-eventwitness">github.com/Oziman13/genlayer-eventwitness</a></p>
 </main>
 
 <script src="app.js"></script>

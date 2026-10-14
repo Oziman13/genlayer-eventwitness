@@ -1,0 +1,40 @@
+PASS no wallet: feed readable
+PASS no wallet: actions locked with reason
+PASS no private key input / storage
+PASS connect: adds then switches to Studio chain
+PASS connect: role owner shown
+PASS connect rejected: explained
+PASS viewer in open window: challenge enabled, finalize locked, owner actions locked
+PASS viewer: reasons shown
+PASS viewer after window: finalize enabled, challenge locked ('closed')
+PASS challenge already used: locked with reason
+PASS owner in IDLE: start + add enabled, assess/remove/challenge/finalize locked
+PASS owner IDLE: remove explains there is nothing to remove
+PASS owner OPEN: assess enabled; start and source edits locked
+PASS owner FINALIZED: remove of a non-extra URL is locked with reason
+PASS owner FINALIZED: remove of an extra URL is enabled
+PASS owner FINALIZED: challenge/finalize locked
+PASS challenge: empty fields not sent
+PASS challenge: ACCEPTED shown as in progress
+PASS challenge: FINALIZED+SUCCESS reported as applied
+PASS challenge: signed by the connected wallet account
+PASS finalize refused by contract: not reported as applied
+PASS owner assess: applied and state reloaded
+PASS user rejection
+PASS send error, nonce unchanged
+PASS send error, nonce moved (ambiguous)
+PASS undetermined: reported as not applied
+PASS network switched away: warning
+PASS wrong network at send: wallet switched back, then applied
+PASS resume: open transaction found and finished
+PASS resume: record cleared
+PASS setup: asks to connect and lists field errors
+PASS setup: two sources on the same site rejected before any transaction
+PASS setup: window out of range rejected
+PASS setup: deploy signed by wallet
+PASS setup: new address adopted only after FINALIZED+SUCCESS and share link shown
+PASS deploy refused: reported and address NOT adopted
+PASS hostile event text rendered as text
+PASS no page errors in the whole run
+
+38 passed, 0 failed

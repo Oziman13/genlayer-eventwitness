@@ -1,10 +1,10 @@
 # EventWitness
 
-> **EventWitness app.** This repository was renamed from `genlayer-eventwitness`
-> to `genlayer-eventwitness-app`; the old address redirects here. Its contract was
-> accepted earlier as a standalone Intelligent Contract. The web client in `web/`,
-> its live check (`evidence/web-live-check.txt`) and the documentation around it
-> are the new work added in this repository since then.
+> **App package.** This repository is the EventWitness app: the web client (`web/`),
+> the contract it drives (`contracts/`), tests and evidence. The contract source is
+> the same one that was accepted earlier as a standalone Intelligent Contract
+> (https://github.com/Oziman13/genlayer-eventwitness). The web client, its live check
+> and the documentation around it are the new work in this repository.
 
 A bounded, challengeable status feed for **one event**, built as a GenLayer
 Intelligent Contract. Three registered sources on three different sites are
@@ -119,28 +119,35 @@ longer resolves, the raw values in `evidence/live-run-1.txt` are the record.
 
 ## Web client
 
-`web/` is a static page (no server) that reads and drives the deployed contract
-through `genlayer-js` on Studionet. Open `web/index.html` locally or serve the
-folder with GitHub Pages.
+`web/` is a static page (no server). `web/app.js` is a bundle of `web/src/*.js` and `genlayer-js` 1.1.8
+(esbuild), so there is no CDN dependency. It reads and drives an EventWitness deployment on Studionet.
+Every write is signed by the user's own EIP-1193 wallet (MetaMask or similar). The page never creates,
+asks for or stores a private key.
 
-- Reads `get_state_json` and every `get_history_json` row and shows the event,
-  current reading, round, phase, challenge deadline, sources and full history.
-- `challenge` and `finalize` can be sent by anyone, signed with a throwaway key
-  kept in the browser; the page waits for the transaction to be accepted and
-  reloads the state.
-- Owner actions (`start_round`, `assess`, `add_source`, `remove_source`) unlock
-  when the owner pastes a Studio test key. The key stays in memory only.
-- Contract address can be changed in the page or with `?address=0x...`, so any
-  EventWitness deployment can be inspected.
-- `web/app.js` is a bundle of `web/src/main.js` and `genlayer-js` (esbuild), so
-  the page has no CDN dependency. To rebuild: install `genlayer-js` and `esbuild`,
-  then bundle `src/main.js` to `app.js` as an IIFE for the browser.
-- Checked so far: rendering and the read path against a mocked Studionet RPC in
-  headless Chromium (history text is escaped, not injected as HTML). On live
-  Studionet (2026-10-12) the page read the real state and sent `finalize` with
-  its browser key; the round went from PROVISIONAL to FINALIZED and the history
-  gained the row (`evidence/web-live-check.txt`). `challenge` and the owner
-  actions have not been exercised live from the page.
+- **Wallet**: connect, add or switch to the GenLayer Studio network (chain 61999), follow account and network changes.
+- **Role-aware controls** (`web/src/logic.js`): the owner is read from the contract. Each button is enabled only
+  when the connected account may do that action in the current phase and time (challenge window open and not
+  yet used, finalize only after the window, owner-only round/assess/source edits, sources only between
+  assessments, remove only for extra sources). A line under every disabled button says why.
+- **Transaction lifecycle** (`web/src/wallet.js`): a transaction counts as done only when the network status is
+  FINALIZED and the execution result is a success. ACCEPTED is shown as in progress. FINALIZED with an error
+  result is reported as refused by the contract; UNDETERMINED, CANCELED and timeouts as not applied. If the
+  wallet errors while the account's transaction count moved, the page says the transaction may have been
+  sent and does not invite a blind resend. The hash of an open transaction is kept so a reload resumes
+  watching it. A user rejection is reported as "nothing was sent". The page does not infer success from the
+  history length.
+- **Setup workflow**: "Set up a new event feed" validates the form (identity, date, window 300 to 86400 s,
+  exactly three https sources on three distinct sites, mirroring the contract's heuristic), fetches
+  `contracts/event_witness.py` from this repository, deploys through the wallet, and adopts the new address
+  only after FINALIZED + success, then shows a share link.
+- **Tests**: `tests/browser/wallet_flow.test.mjs` runs the real page in headless Chromium against a mock
+  EIP-1193 wallet and a mock Studio RPC (38 checks, `evidence/browser-tests.txt`): connect and network
+  add/switch, user rejection, roles and phases, challenge and finalize outcomes, contract refusal,
+  undetermined, ambiguous send, wrong network at send time, resume after reload, deploy workflow and
+  refused deploy, hostile text rendering. They prove the page's logic, not real MetaMask or real Studionet
+  behaviour.
+- Earlier live check (2026-10-12, previous throwaway-key client, `evidence/web-live-check.txt`): the page read
+  real state and sent `finalize`. That client has been replaced; the wallet client has not been run live yet.
 
 ## Known limitations
 
