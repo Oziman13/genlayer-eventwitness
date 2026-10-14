@@ -1,0 +1,18 @@
+Live check 2 of the EventWitness web client (the build with ambiguous-send recovery)
+Date: 2026-10-14 (UTC times below); wallet: MetaMask, Studio test account 0x663247C083DcBB64e0c8c3bFacd53026427e5350 (contract owner)
+Network: GenLayer Studionet, contract 0x0E8dA749ff4DfED265745505c53d73a1eEdc941c
+Page: https://oziman13.github.io/genlayer-eventwitness-app/web/?address=0x0E8dA749ff4DfED265745505c53d73a1eEdc941c
+Before the run, web/src/recovery.js was confirmed to be served by GitHub Pages (i.e. the new build was published).
+
+What was done from the page, each confirmed only after the page reported "FINALIZED and the contract call succeeded":
+  17:50:44  START     round 3 opened                      (tx hash not recorded)
+  17:52:27  ASSESS    candidate POSTPONED                 tx 0xef6612a468d850821f1990717dc31b20145e374edd79fca89b1f8223925741ff
+  17:57:58  FINALIZE  round 3 finalized as POSTPONED      tx 0x6b8ec95a4f7f242902c307d9e2f4453c88518b58e9602bc5843cc593656eba38
+Challenge deadline of round 3 was 17:57:27; Finalize stayed disabled ("The challenge window is still open.") until it passed.
+Controls matched the phase at every step (Start locked while a round was active, Assess locked outside OPEN, source edits locked
+between assessments, Challenge/Finalize locked in FINALIZED with a reason shown). Final contract history: 9 rows, last row FINALIZE POSTPONED.
+Explorer: https://genlayer-explorer.vercel.app/tx/<hash>
+
+NOT covered by this live run: reload while a transaction was open (resume), the ambiguous-send path (wallet error after broadcast),
+challenge from a second account, add_source and remove_source, a refused transaction, a live deployment from the page.
+Those are covered only by the mock-wallet tests (evidence/browser-tests.txt).
